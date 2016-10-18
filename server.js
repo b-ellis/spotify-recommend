@@ -35,14 +35,18 @@ app.get('/search/:name', function(req,res) {
     searchReq.on('error', function(code) {
         res.sendStatus(code);
     });
-});
-
-app.get('search/:id', function(req, res) {
-    var searchReq = getFromApi('artists', {
-        id: req.params.id
-        
-    }, console.log(req.params.id));
     
-})
+    var relatedReq = getFromApi('artists', {
+        id: ,
+    });
+    
+    relatedReq.on('end', function(item) {
+        
+    });
+    
+    relatedReq.on('error', function(code) {
+        
+    })
+});
 
 app.listen(process.env.PORT || 8080);
