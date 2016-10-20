@@ -2,11 +2,15 @@ var unirest = require("unirest");
 var express = require("express");
 var events = require("events");
 
-var getFromApi = function(endpoint, args) {
+var getFromApi = function(endpoint, args, flag) {
     var emitter = new events.EventEmitter();
     if (endpoint === 'artists') {
-       endpoint = 'artists/' + args + '/related-artists';
-    }
+       if(flag){
+           endpoint = 'artists/' + args + '/related-artists';
+       }else {
+           endpoint = 'artists/' + args + '/top-tracks?country=US';
+       }
+    } 
     unirest.get('https://api.spotify.com/v1/' + endpoint)
            .qs(args)
            .end(function(response) {
@@ -32,10 +36,11 @@ app.get('/search/:name', function(req,res) {
     
     searchReq.on('end', function(item) {
         var artist = item.artists.items[0];
-        var relatedReq = getFromApi('artists', artist.id);
+        var relatedReq = getFromApi('artists', artist.id, true);
     
         relatedReq.on('end', function(item) {
             artist.related = item.artists;
+            // console.log(artist.related);
             var artistLength = artist.related.length;
             var checked = 0;
             
@@ -45,13 +50,22 @@ app.get('/search/:name', function(req,res) {
                 }
             };
             
-            artist.related.forEach(function(){
-                checked += 1;
-                checkList();
+            artist.related.forEach(function(artist, index){
+                var topReq = getFromApi('artists', artist.id, false);
+                
+                topReq.on('end', function(item) {
+                    artist.tracks = item.tracks;
+                    checked += 1;
+                    checkList();
+                });
+                
+                topReq.on('error',function() {
+                    res.status(404);
+                });
             });
         });
         
-        relatedReq.on('error', function(code) {
+        relatedReq.on('error', function() {
             res.status(404);
         });
     });
